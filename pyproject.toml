@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "line-sweeping"
+version = "0.1.0"
+description = "MILP model for sweeping the lines of a clay tennis court in minimal time (OR-Tools + SCIP)"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Taras Bulubas", email = "taras.bulubas@gmail.com" }]
+license = "LicenseRef-All-Rights-Reserved"
+license-files = ["LICENSE"]
+classifiers = ["Private :: Do Not Upload"]
+dependencies = ["ortools>=9.10"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8"]
+plot = ["matplotlib>=3.8"]
+notebook = ["line-sweeping[plot]", "jupyterlab>=4", "ipywidgets>=8", "pandas>=2"]
+
+[project.scripts]
+line-sweeping = "line_sweeping.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore:builtin type .* has no __module__ attribute:DeprecationWarning"]
