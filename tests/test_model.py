@@ -43,18 +43,28 @@ def optimal_carry_distance(instance: SweepInstance) -> float:
 
 
 def test_half_court_graph():
+    # The centre mark is swept with the baseline, so the baseline is not split at it.
     graph = SweepInstance(broom=BEHIND_CENTRE).graph
+    assert len(graph.vertices) == 12
+    assert len(graph.segments) == 12
+    assert graph.total_length == pytest.approx(10.97 + 4 * 11.885 + 8.23 + 6.40)
+    assert len(graph.odd_vertices) == 10
+    kinds = sorted(v.kind for v in graph.vertices)
+    assert kinds.count("corner") == 2 and kinds.count("junction") == 5 and kinds.count("line end") == 5
+
+
+def test_half_court_graph_with_separate_centre_mark():
+    graph = SweepInstance(broom=BEHIND_CENTRE, separate_centre_mark=True).graph
     assert len(graph.vertices) == 14
     assert len(graph.segments) == 14
     assert graph.total_length == pytest.approx(10.97 + 4 * 11.885 + 8.23 + 6.40 + 0.10)
     assert len(graph.odd_vertices) == 12
-    kinds = sorted(v.kind for v in graph.vertices)
-    assert kinds.count("corner") == 2 and kinds.count("junction") == 6 and kinds.count("line end") == 6
 
 
+@pytest.mark.parametrize("separate_centre_mark", [False, True])
 @pytest.mark.parametrize("broom", BROOM_PLACES)
-def test_optimal_and_valid(broom):
-    instance = SweepInstance(broom=broom)
+def test_optimal_and_valid(broom, separate_centre_mark):
+    instance = SweepInstance(broom=broom, separate_centre_mark=separate_centre_mark)
     plan = solve(instance)
 
     assert plan.status == Status.OPTIMAL
@@ -65,10 +75,19 @@ def test_optimal_and_valid(broom):
     assert len(plan.runs) >= instance.min_runs
 
 
-def test_default_example():
-    plan = solve(SweepInstance(broom=BEHIND_CENTRE))
-    assert len(plan.runs) == 6
-    assert plan.objective == pytest.approx(103.02, abs=0.01)
+# The examples of docs/mip-model.md: (broom, separate centre mark) -> (runs, total time).
+DOC_EXAMPLES = [
+    (BEHIND_CENTRE, False, 5, 102.82),
+    (SIDE_NEAR_NET, False, 5, 100.75),
+    (BEHIND_CENTRE, True, 6, 103.02),
+]
+
+
+@pytest.mark.parametrize(("broom", "separate_centre_mark", "runs", "time"), DOC_EXAMPLES)
+def test_doc_examples(broom, separate_centre_mark, runs, time):
+    plan = solve(SweepInstance(broom=broom, separate_centre_mark=separate_centre_mark))
+    assert len(plan.runs) == runs
+    assert plan.objective == pytest.approx(time, abs=0.01)
 
 
 def test_speeds_scale_the_two_parts():

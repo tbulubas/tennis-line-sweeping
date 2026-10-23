@@ -83,8 +83,13 @@ def distance(a: Point, b: Point) -> float:
     return math.hypot(b[0] - a[0], b[1] - a[1])
 
 
-def half_court_lines(court: CourtDimensions) -> list[Line]:
-    """All lines on one player's half of the court, doubles lines included."""
+def half_court_lines(court: CourtDimensions, separate_centre_mark: bool = False) -> list[Line]:
+    """All lines on one player's half of the court, doubles lines included.
+
+    The centre mark is swept together with the baseline (the broom is wider
+    than the 10 cm mark), so by default it is no line of its own and the
+    baseline is not split at it. With separate_centre_mark it is a line.
+    """
     w, net = court.doubles_width, court.half_length
     a, s, c = court.alley_width, court.service_line_y, court.doubles_width / 2
     lines = [
@@ -101,7 +106,7 @@ def half_court_lines(court: CourtDimensions) -> list[Line]:
         Line("service line", (a, s), (w - a, s)),
         Line("centre service line", (c, s), (c, net)),
     ]
-    if court.centre_mark_length > TOLERANCE:
+    if separate_centre_mark and court.centre_mark_length > TOLERANCE:
         lines.append(Line("centre mark", (c, 0.0), (c, court.centre_mark_length)))
     return lines
 

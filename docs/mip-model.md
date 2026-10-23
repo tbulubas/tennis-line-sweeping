@@ -31,13 +31,13 @@ the moves — is constructed afterwards (Hierholzer's algorithm).
 
 | Symbol                 | Meaning                                                      |
 |------------------------|--------------------------------------------------------------|
-| v ∈ V                  | vertices: stop points on the lines (14 on a half court)      |
+| v ∈ V                  | vertices: stop points on the lines (12 on a half court)      |
 | B                      | the broom place                                              |
 | N = V ∪ {B}            | nodes                                                        |
-| e ∈ E                  | segments; e = {u(e), v(e)}, listed with an arbitrary orientation u(e) → v(e) (14 on a half court) |
+| e ∈ E                  | segments; e = {u(e), v(e)}, listed with an arbitrary orientation u(e) → v(e) (12 on a half court) |
 | (a, b) ∈ A             | carries: ordered pairs of distinct nodes a, b ∈ N            |
 | deg(v)                 | number of segments at vertex v                               |
-| O ⊆ V                  | vertices of odd degree (12 on a half court)                  |
+| O ⊆ V                  | vertices of odd degree (10 on a half court)                  |
 
 ## Parameters
 
@@ -121,14 +121,14 @@ and the painted lines.
 
 ## Model size (half court)
 
-| Item               | Count                |
-|--------------------|----------------------|
-| binaries s         | \|E\| = 14           |
-| binaries w         | \|N\|·(\|N\|−1) = 15·14 = 210 |
-| constraints (1)    | \|V\| = 14           |
-| constraints (2)    | 2                    |
-| constraints (3)    | \|O\| = 12           |
-| constraints (4)    | \|V\|·(\|V\|−1)/2 = 91 |
+| Item               | Count                | with a separate centre mark |
+|--------------------|----------------------|-----------------------------|
+| binaries s         | \|E\| = 12           | 14                          |
+| binaries w         | \|N\|·(\|N\|−1) = 13·12 = 156 | 15·14 = 210        |
+| constraints (1)    | \|V\| = 12           | 14                          |
+| constraints (2)    | 2                    | 2                           |
+| constraints (3)    | \|O\| = 10           | 12                          |
+| constraints (4)    | \|V\|·(\|V\|−1)/2 = 66 | 91                        |
 
 SCIP solves it to optimality in a fraction of a second.
 
@@ -145,19 +145,27 @@ longer holds.
 
 ## Examples
 
-All with the ITF half court and v_s = v_c = 1 m/s; sweeping takes 73.24 s.
+All with the ITF half court and v_s = v_c = 1 m/s; the centre mark is swept
+with the baseline, so sweeping takes 73.14 s.
 
 **Broom on the back fence, behind the centre mark, B = (5.485, −6.40).**
-6 runs, carrying 29.78 m, total **103.02 s**. The broom is carried 7.61 m
+5 runs, carrying 29.68 m, total **102.82 s**. The broom is carried 7.61 m
 to B1, the first run sweeps the left corner and the left doubles sideline up
-to the net, and the last run ends at B2, again 7.61 m from B.
+to the net, the second sweeps the left singles sideline down and the baseline
+from B1 to the right corner in one go, and the last run ends at B2, again
+7.61 m from B.
 
 **Broom on the side fence next to the net, B = (−3.66, 11.00).**
-6 runs, carrying 27.71 m, total **100.95 s**. The first run starts at N0,
-the line end nearest B (3.77 m), and sweeps the left doubles sideline down to
-the baseline; the last run ends at N1, 5.11 m from B.
+5 runs, carrying 27.61 m, total **100.75 s**. The first run starts at N0,
+the line end nearest B (3.77 m), and sweeps the left doubles sideline, the
+whole baseline and the right doubles sideline; the last run ends at N1,
+5.11 m from B.
 
-Both reach the lower bound of 6 runs.
+Both reach the lower bound of 5 runs.
+
+**With the centre mark as a line of its own** (back fence again): 6 runs,
+carrying 29.78 m, total **103.02 s**. The 10 cm mark costs one more run and
+0.20 s — 0.10 m of sweeping and 0.10 m of carrying to its tip.
 
 ## Outlook — later iterations
 

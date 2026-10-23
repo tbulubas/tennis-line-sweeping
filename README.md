@@ -145,8 +145,8 @@ on the back fence, behind the centre mark:
 
 ```
 status: optimal
-total time: 103.02 s = sweeping 73.24 s + carrying 29.78 s
-distance: sweeping 73.24 m, carrying 29.78 m; 6 runs (at least 6)
+total time: 102.82 s = sweeping 73.14 s + carrying 29.68 s
+distance: sweeping 73.14 m, carrying 29.68 m; 5 runs (at least 5)
   carry  (5.485, -6.400) → (1.370, 0.000)     7.609 m
 run 1:
   sweep  (1.370, 0.000) → (0.000, 0.000)     1.370 m   baseline
@@ -160,8 +160,9 @@ check: OK
 Positions are in metres in court coordinates: the origin is the left end of
 the baseline seen from behind it, x runs along the baseline to the right, y
 towards the net (at 11.885). Options: `-x`/`-y` broom place,
-`--sweep-speed` and `--carry-speed` in m/s (default 1), `--time-limit`
-seconds for the solver.
+`--sweep-speed` and `--carry-speed` in m/s (default 1), `--centre-mark` to
+sweep the centre mark as a line of its own instead of together with the
+baseline, `--time-limit` seconds for the solver.
 
 From Python:
 

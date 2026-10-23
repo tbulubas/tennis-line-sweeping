@@ -43,20 +43,25 @@ Only **one half** of the court is swept — the side of one player — with
       │      │                                         │      │
       │      │ left singles               right singles│      │
       │      │ sideline                        sideline│      │
-   B0 ●───B1 ●───────────────── BC ●──────────────── B2 ●───● B3
-                                   ╹ centre mark (ends at CM)
+   B0 ●───B1 ●──────────────────── ╹ ─────────────────── B2 ●───● B3
+                               centre mark
    ^ left doubles sideline       baseline       right doubles sideline ^
 ```
 
 | Line                     | From → to                       | Length   |
 |--------------------------|---------------------------------|----------|
-| baseline                 | B0 → B3                         | 10.97 m  |
+| baseline (with the centre mark) | B0 → B3                  | 10.97 m  |
 | left / right doubles sideline | baseline → net             | 2 × 11.885 m |
 | left / right singles sideline | baseline → net             | 2 × 11.885 m |
 | service line             | S1 → S2                         | 8.23 m   |
 | centre service line      | SC → net                        | 6.40 m   |
-| centre mark              | BC → CM, into the court         | 0.10 m   |
-| **total**                |                                 | **73.24 m** |
+| **total**                |                                 | **73.14 m** |
+
+The **centre mark** — 0.10 m long, pointing into the court from the middle
+of the baseline — is swept **together with the baseline**: the broom is
+wider than the mark, so it is cleaned in passing and sweeping never stops
+there (assumption 6). As an option the model can still treat it as a line of
+its own, from the baseline junction BC to its tip CM (total 73.24 m).
 
 Coordinates: the origin is the left end of the baseline (B0) as seen by the
 player behind the baseline facing the net; x runs along the baseline to the
@@ -109,15 +114,17 @@ time = (length swept) / v_s + (length carried) / v_c
 ```
 
 Observation: every line is swept exactly once, so the sweeping time
-73.24 m / v_s is the same for every plan. What the plan decides is the
+73.14 m / v_s is the same for every plan. What the plan decides is the
 carrying: how often and how far the broom has to be carried. In iteration 1
 the speeds therefore only change the reported time, not the best route.
 
 A lower bound on the number of runs: a run passes through a junction with an
 even number of line pieces, but at a vertex where an **odd** number of line
-pieces meet, at least one run has to start or end. The half court has 12
-such vertices (the six junctions B1, BC, B2, S1, SC, S2 and the six line ends
-N0, N1, NC, N2, N3, CM), so every plan has **at least 6 runs**.
+pieces meet, at least one run has to start or end. The half court has 10
+such vertices (the five junctions B1, B2, S1, SC, S2 and the five line ends
+N0, N1, NC, N2, N3), so every plan has **at least 5 runs**. With the centre
+mark as a line of its own, BC and CM are two more such vertices, and at
+least 6 runs are needed.
 
 ## Modelling assumptions
 
@@ -125,8 +132,8 @@ N0, N1, NC, N2, N3, CM), so every plan has **at least 6 runs**.
    width at its nominal position, and the broom covers the line's width in
    one pass.
 2. **Where runs start and end.** Runs start and end only at the *stop points*:
-   corners (B0, B3), junctions (B1, BC, B2, S1, SC, S2) and line ends (N0, N1,
-   NC, N2, N3, CM). The ends at the net count as line ends: a line that ends
+   corners (B0, B3), junctions (B1, B2, S1, SC, S2) and line ends (N0, N1,
+   NC, N2, N3). The ends at the net count as line ends: a line that ends
    there can only be left by lifting the broom.
 3. **Carrying is straight-line.** The broom is carried along the straight
    segment between two points; the court has no obstacles apart from the net,
@@ -135,6 +142,10 @@ N0, N1, NC, N2, N3, CM), so every plan has **at least 6 runs**.
 4. **No time for lifting and setting down the broom** and none for turning at
    a corner.
 5. Sweeping direction does not matter.
+6. **The centre mark is swept with the baseline.** It is no line of its own
+   and does not split the baseline, because in practice sweeping is never
+   interrupted there. Optionally (`separate_centre_mark`, CLI `--centre-mark`)
+   it is a line BC → CM like the others.
 
 ## Planned iterations
 

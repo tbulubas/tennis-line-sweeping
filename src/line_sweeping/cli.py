@@ -57,6 +57,8 @@ def main(argv: list[str] | None = None) -> None:
                         help="y of the broom place [m]; 0 = baseline, y grows towards the net")
     parser.add_argument("--sweep-speed", type=float, default=1.0, help="speed while sweeping v_s [m/s]")
     parser.add_argument("--carry-speed", type=float, default=1.0, help="speed while carrying v_c [m/s]")
+    parser.add_argument("--centre-mark", action="store_true",
+                        help="sweep the centre mark as a line of its own, not together with the baseline")
     parser.add_argument("--time-limit", type=float, help="time limit of the solver [s]")
     args = parser.parse_args(argv)
     if hasattr(sys.stdout, "reconfigure"):
@@ -66,6 +68,7 @@ def main(argv: list[str] | None = None) -> None:
         broom=(args.broom_x, args.broom_y),
         sweep_speed=args.sweep_speed,
         carry_speed=args.carry_speed,
+        separate_centre_mark=args.centre_mark,
     )
     print(format_plan(instance, solve(instance, args.time_limit)))
 

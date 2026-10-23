@@ -1,0 +1,1109 @@
+<title>Line Sweeping Challenge</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: the court is the playing field on the left, a scoreboard and controls beside it; stacked on phones. */
+:root {
+  --bg: #faf7f4;
+  --ink: #1f1b17;
+  --ink-2: #5b534b;
+  --muted: #8c837a;
+  --rule: #e6ddd4;
+  --clay: #f1dfd1;
+  --clay-edge: #d7bfab;
+  --dust: #dcc3ae;
+  --line: #ffffff;
+  --net: #3d3a36;
+  --carry: #4a4540;
+  --hint: rgba(28, 92, 171, 0.28);
+  --hover: rgba(28, 92, 171, 0.45);
+  --accent: #1c5cab;
+  --accent-ink: #ffffff;
+  --board: #1e2b2a;
+  --board-ink: #f2efe9;
+  --board-dim: #a9b8b4;
+  --good: #2f7d32;
+  --run-first: #5598e7;
+  --run-last: #0b2c58;
+  --marker-ground: #fcfcfb;
+  --font-display: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #161412; --ink: #f1ece6; --ink-2: #c8bfb5; --muted: #90877d; --rule: #322c27;
+    --clay: #4a3023; --clay-edge: #6c4836; --dust: #77543f; --line: #efe7df; --net: #d8d2cb;
+    --carry: #ece3d9; --hint: rgba(109, 167, 236, 0.32); --hover: rgba(109, 167, 236, 0.5);
+    --accent: #6da7ec; --accent-ink: #0d1b2c; --board: #0f1717; --board-ink: #f2efe9; --board-dim: #9aaaa6;
+    --good: #7fc983; --run-first: #3f78c2; --run-last: #cfe1f8; --marker-ground: #2a1c15;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #161412; --ink: #f1ece6; --ink-2: #c8bfb5; --muted: #90877d; --rule: #322c27;
+  --clay: #4a3023; --clay-edge: #6c4836; --dust: #77543f; --line: #efe7df; --net: #d8d2cb;
+  --carry: #ece3d9; --hint: rgba(109, 167, 236, 0.32); --hover: rgba(109, 167, 236, 0.5);
+  --accent: #6da7ec; --accent-ink: #0d1b2c; --board: #0f1717; --board-ink: #f2efe9; --board-dim: #9aaaa6;
+  --good: #7fc983; --run-first: #3f78c2; --run-last: #cfe1f8; --marker-ground: #2a1c15;
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 15px;
+  line-height: 1.5;
+}
+.page {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding-block: 24px 40px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: grid;
+  gap: 20px;
+}
+header { display: grid; gap: 6px; max-width: 70ch; }
+h1 {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(2rem, 5vw, 3.1rem);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  margin: 0;
+  text-wrap: balance;
+}
+.lede { margin: 0; color: var(--ink-2); }
+
+.app {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+@media (max-width: 860px) { .app { grid-template-columns: minmax(0, 1fr); } }
+
+.field { display: grid; gap: 10px; min-width: 0; }
+.court-wrap { position: relative; }
+svg#court { width: 100%; height: auto; display: block; touch-action: manipulation; user-select: none; }
+.status {
+  min-height: 3em;
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 0.95rem;
+}
+.status strong { color: var(--ink); font-weight: 600; }
+
+.legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 0.85rem; color: var(--ink-2); }
+.legend span { display: inline-flex; align-items: center; gap: 7px; }
+.sw { display: inline-block; width: 22px; height: 4px; border-radius: 2px; }
+.sw.ramp { background: linear-gradient(90deg, var(--run-first), var(--run-last)); }
+.sw.carry { height: 0; border-top: 2px dashed var(--carry); }
+.sw.dust { background: var(--dust); }
+.dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
+.dot.start { background: var(--run-first); }
+.dot.end { border: 2px solid var(--run-first); background: var(--marker-ground); }
+.dot.you { border: 2px solid var(--accent); background: transparent; }
+
+.side { display: grid; gap: 16px; min-width: 0; }
+.board {
+  background: var(--board);
+  color: var(--board-ink);
+  border-radius: 10px;
+  padding: 16px 18px;
+  display: grid;
+  gap: 12px;
+}
+.board .label {
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--board-dim);
+}
+.board .big {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 3.2rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 20px;
+}
+.board .big small { font-size: 1.4rem; color: var(--board-dim); margin-left: 4px; }
+.board .big .dist { font-size: 2.2rem; font-weight: 600; }
+.stat .sub { color: var(--board-dim); font-size: 0.82rem; font-variant-numeric: tabular-nums; }
+.board .split { color: var(--board-dim); font-size: 0.88rem; font-variant-numeric: tabular-nums; }
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.stat { display: grid; gap: 2px; }
+.stat b {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 1.6rem;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+}
+.verdict {
+  border-top: 1px solid rgba(255, 255, 255, 0.14);
+  padding-top: 10px;
+  font-size: 0.95rem;
+}
+.verdict.win b { color: #9be29f; }
+
+.group { display: grid; gap: 8px; }
+.group h2 {
+  margin: 0;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 600;
+}
+.row { display: flex; flex-wrap: wrap; gap: 8px; }
+button {
+  font: inherit;
+  font-size: 0.9rem;
+  border-radius: 7px;
+  border: 1px solid var(--rule);
+  background: transparent;
+  color: var(--ink);
+  padding: 7px 12px;
+  cursor: pointer;
+}
+button:hover:not(:disabled) { border-color: var(--accent); }
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.toggle { display: inline-flex; align-items: center; gap: 8px; font-size: 0.9rem; color: var(--ink-2); cursor: pointer; }
+.hint { margin: 0; font-size: 0.82rem; color: var(--muted); }
+
+.log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  border-top: 1px solid var(--rule);
+  font-size: 0.86rem;
+  font-variant-numeric: tabular-nums;
+}
+.log li {
+  display: grid;
+  grid-template-columns: 2.2em minmax(0, 1fr) auto;
+  gap: 8px;
+  padding: 5px 0;
+  border-bottom: 1px solid var(--rule);
+  color: var(--ink-2);
+}
+.log li.sweep { color: var(--ink); }
+.log .n { color: var(--muted); }
+.log .len { color: var(--muted); }
+.log .empty { display: block; color: var(--muted); }
+
+.scores { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--rule); font-size: 0.9rem; }
+.scores li {
+  display: grid;
+  grid-template-columns: 1.6em 22px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  border-bottom: 1px solid var(--rule);
+  font-variant-numeric: tabular-nums;
+}
+.scores li.me { font-weight: 600; }
+.scores .rank { color: var(--muted); }
+.scores img { width: 22px; height: 22px; border-radius: 50%; display: block; }
+.scores .who { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scores .who small { color: var(--muted); font-weight: 400; margin-left: 6px; }
+.scores .t { text-align: right; }
+.scores .t small { display: block; color: var(--muted); font-weight: 400; font-size: 0.78rem; }
+.scores li.note { display: block; color: var(--muted); font-weight: 400; }
+.places { display: flex; flex-wrap: wrap; gap: 6px; }
+.places button { font-size: 0.8rem; padding: 4px 9px; }
+
+.rules { max-width: 70ch; color: var(--ink-2); font-size: 0.92rem; display: grid; gap: 6px; }
+.rules h2 { font-family: var(--font-display); font-size: 1.3rem; text-transform: uppercase; color: var(--ink); margin: 0; letter-spacing: 0.02em; }
+.rules ol { margin: 0; padding-left: 1.3em; display: grid; gap: 3px; }
+.rules p { margin: 0; }
+
+.hit-seg { stroke: transparent; fill: none; cursor: pointer; }
+.hit-seg:hover { stroke: var(--hover); }
+.hit-pt { fill: transparent; cursor: pointer; }
+.hit-pt:hover { fill: var(--hover); }
+.hit-bg { cursor: crosshair; }
+.handle { cursor: pointer; }
+.handle:hover { stroke: var(--accent); }
+@media (prefers-reduced-motion: no-preference) {
+  .flash { animation: pulse 1s ease-in-out infinite; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .you-ring { animation: pulse 1.6s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+  @keyframes pulse { 50% { opacity: 0.45; } }
+}
+</style>
+
+<div class="page">
+  <header>
+    <h1>Line Sweeping Challenge</h1>
+    <p class="lede">Sweep every line on one half of a clay court, doubles lines included, and put the broom back.
+      Every line piece is swept exactly once, so only the walking with the lifted broom decides the time.
+      Can you match the MILP solver?</p>
+  </header>
+
+  <div class="app">
+    <section class="field" aria-label="Court">
+      <div class="court-wrap">
+        <svg id="court" role="img" aria-label="Half of a clay tennis court seen from above, net at the top"></svg>
+      </div>
+      <p class="status" id="status" aria-live="polite"></p>
+      <div class="legend" aria-hidden="true">
+        <span><i class="sw dust"></i>not swept yet</span>
+        <span><i class="sw ramp"></i>swept, run 1 → last run</span>
+        <span><i class="dot start"></i>run starts</span>
+        <span><i class="dot end"></i>run ends</span>
+        <span><i class="sw carry"></i>broom carried</span>
+        <span><i class="dot you"></i>you</span>
+      </div>
+    </section>
+
+    <aside class="side">
+      <div class="board" aria-live="polite">
+        <div>
+          <div class="label" id="time-label">Your time</div>
+          <div class="big"><span id="time">0.00<small>s</small></span><span class="dist" id="dist">0.00<small>m</small></span></div>
+          <div class="split" id="split"></div>
+        </div>
+        <div class="stats">
+          <div class="stat"><span class="label">Runs</span><b id="runs">0</b></div>
+          <div class="stat"><span class="label">Lines left</span><b id="left">0</b></div>
+          <div class="stat"><span class="label">Solver</span><b id="opt">–</b><span class="sub" id="opt-dist"></span></div>
+        </div>
+        <div class="verdict" id="verdict"></div>
+      </div>
+
+      <div class="group">
+        <h2>Broom place</h2>
+        <div class="row" id="presets">
+          <button type="button" id="preset-back" data-x="5.485" data-y="-6.4">Back fence</button>
+          <button type="button" id="preset-side" data-x="-3.66" data-y="11">Side fence by the net</button>
+          <button type="button" id="preset-corner" data-x="-3.66" data-y="-6.4">Back corner</button>
+        </div>
+        <p class="hint" id="broom-hint">Or click anywhere on the clay to put the broom there. The broom place is fixed once you start.</p>
+      </div>
+
+      <div class="group">
+        <h2>Play</h2>
+        <div class="row">
+          <button type="button" id="undo">Undo</button>
+          <button type="button" id="reset">Start over</button>
+        </div>
+        <div class="row">
+          <button type="button" id="lift" aria-pressed="false">Lift broom</button>
+        </div>
+        <p class="hint">Lift the broom to stop sweeping where you stand (or click your own point, or press L).
+          Then any point you click is reached by carrying, even a neighbouring one.</p>
+      </div>
+
+      <div class="group">
+        <h2>Show</h2>
+        <div class="row" role="group" aria-label="Route shown on the court">
+          <button type="button" id="view-you" aria-pressed="true">Your route</button>
+          <button type="button" id="view-opt" aria-pressed="false">Solver's route</button>
+        </div>
+      </div>
+
+      <div class="group">
+        <h2 id="scores-title">Best times from this broom place</h2>
+        <ol class="scores" id="scores" aria-labelledby="scores-title">
+          <li class="note">Loading the board…</li>
+        </ol>
+        <p class="hint" id="scores-hint">Finish a round and your time goes on the board under your claude.ai name.
+          Only your best time per broom place is kept.</p>
+        <div class="places" id="places"></div>
+      </div>
+
+      <div class="group">
+        <h2>Your moves</h2>
+        <ol class="log" id="log"></ol>
+      </div>
+    </aside>
+  </div>
+
+  <section class="rules">
+    <h2>How to play</h2>
+    <ol>
+      <li>You start at the broom place with the broom lifted.</li>
+      <li>Click a corner, a junction or a line end to carry the broom there in a straight line.</li>
+      <li>Click a line piece that starts where you stand to sweep it, or click the point at its other end.
+        A run goes on as long as you keep sweeping.</li>
+      <li>To stop at a corner or junction, lift the broom: click your own point, press <b>Lift broom</b> or L.
+        The next point you click is then reached by carrying, even when a dusty line leads there.</li>
+      <li>Every line piece is swept once. When all are clean, click the broom square to put the broom back.</li>
+    </ol>
+    <p>Speed is 1 m/s for sweeping and for carrying, so seconds equal metres walked. The court has the ITF
+      dimensions: 10.97 m doubles width, 8.23 m singles width, service line 6.40 m from the net. The 10 cm
+      centre mark is swept in passing with the baseline, as on a real court. The lines total 73.14 m. The
+      solver's route is provably optimal, so the best you can do is a tie.</p>
+  </section>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  // ---- Court geometry (metres; origin at the left end of the baseline, y towards the net) ----
+  const W = 10.97, A = 1.37, C = 5.485, S = 5.485, NET = 11.885;
+  const RUNBACK = 6.40, SIDE = 3.66, POST = 0.914, PAD = 0.8;
+  const XMIN = -SIDE - PAD, YTOP = NET + 1.0 + PAD;
+  const VBW = W + 2 * SIDE + 2 * PAD, VBH = YTOP + RUNBACK + PAD;
+  const SPEED = 1.0;
+  const R = 0.42; // run marker radius
+
+  const V = [
+    { x: 0, y: 0, label: "left corner" },
+    { x: A, y: 0, label: "baseline · left singles sideline" },
+    { x: W - A, y: 0, label: "baseline · right singles sideline" },
+    { x: W, y: 0, label: "right corner" },
+    { x: A, y: S, label: "service line · left singles sideline" },
+    { x: C, y: S, label: "service line · centre service line" },
+    { x: W - A, y: S, label: "service line · right singles sideline" },
+    { x: 0, y: NET, label: "left doubles sideline at the net" },
+    { x: A, y: NET, label: "left singles sideline at the net" },
+    { x: C, y: NET, label: "centre service line at the net" },
+    { x: W - A, y: NET, label: "right singles sideline at the net" },
+    { x: W, y: NET, label: "right doubles sideline at the net" },
+  ];
+  const BROOM = V.length;
+  // The 10 cm centre mark is swept with the baseline, so it is no line piece of its own.
+  const SEG = [
+    [0, 1, "baseline"], [1, 2, "baseline"], [2, 3, "baseline"],
+    [0, 7, "left doubles sideline"], [3, 11, "right doubles sideline"],
+    [1, 4, "left singles sideline"], [4, 8, "left singles sideline"],
+    [2, 6, "right singles sideline"], [6, 10, "right singles sideline"],
+    [4, 5, "service line"], [5, 6, "service line"],
+    [5, 9, "centre service line"],
+  ].map(([u, v, line]) => ({ u, v, line, len: Math.hypot(V[v].x - V[u].x, V[v].y - V[u].y) }));
+  const TOTAL = SEG.reduce((s, e) => s + e.len, 0);
+  const ODD = V.filter((_, i) => SEG.filter((e) => e.u === i || e.v === i).length % 2 === 1).length;
+  const CENTRE_MARK_LENGTH = 0.10;
+
+  // ---- State ----
+  let state = { broom: { x: 5.485, y: -6.4 }, moves: [], view: "you" };
+  let optimum = null;
+  let flash = []; // line pieces highlighted after a refused return of the broom
+  let lifted = false; // the player lifted the broom where they stand
+
+  const pt = (i) => (i === BROOM ? state.broom : V[i]);
+  const dist = (p, q) => Math.hypot(q.x - p.x, q.y - p.y);
+  const position = () => (state.moves.length ? state.moves[state.moves.length - 1].b : BROOM);
+  const sweptSet = () => new Set(state.moves.filter((m) => m.kind === "sweep").map((m) => m.seg));
+  const allSwept = () => sweptSet().size === SEG.length;
+  const finished = () => state.moves.length > 0 && position() === BROOM && allSwept();
+
+  // ---- Exact optimum: B joined to u and v, the rest a minimum matching of the odd vertices ----
+  function solveOptimum(broom) {
+    const deg = V.map(() => 0);
+    SEG.forEach((e) => { deg[e.u]++; deg[e.v]++; });
+    let oddMask = 0;
+    deg.forEach((d, i) => { if (d % 2) oddMask |= 1 << i; });
+    const memo = new Map();
+    function matching(mask) {
+      if (mask === 0) return [0, -1, -1];
+      if (memo.has(mask)) return memo.get(mask);
+      let i = 0;
+      while (!(mask & (1 << i))) i++;
+      let best = [Infinity, -1, -1];
+      for (let j = i + 1; j < V.length; j++) {
+        if (!(mask & (1 << j))) continue;
+        const cost = dist(V[i], V[j]) + matching(mask & ~(1 << i) & ~(1 << j))[0];
+        if (cost < best[0]) best = [cost, i, j];
+      }
+      memo.set(mask, best);
+      return best;
+    }
+    let best = { cost: Infinity };
+    for (let u = 0; u < V.length; u++) {
+      for (let v = u; v < V.length; v++) {
+        const mask = u === v ? oddMask : oddMask ^ (1 << u) ^ (1 << v);
+        const cost = dist(broom, V[u]) + dist(broom, V[v]) + matching(mask)[0];
+        if (cost < best.cost - 1e-12) best = { cost, u, v, mask };
+      }
+    }
+    const carries = [[BROOM, best.u], [best.v, BROOM]];
+    for (let mask = best.mask; mask; ) {
+      const [, i, j] = matching(mask);
+      carries.push([i, j]);
+      mask &= ~(1 << i) & ~(1 << j);
+    }
+    return { carry: best.cost, time: TOTAL / SPEED + best.cost / SPEED, moves: eulerRoute(carries, broom) };
+  }
+
+  // Euler circuit of the line pieces and the carries, from the broom place, sweeps first.
+  function eulerRoute(carries, broom) {
+    const edges = SEG.map((e, k) => ({ a: e.u, b: e.v, kind: "sweep", seg: k }))
+      .concat(carries.map(([a, b]) => ({ a, b, kind: "carry" })));
+    const adj = Array.from({ length: V.length + 1 }, () => []);
+    edges.forEach((e, k) => { adj[e.a].push(k); adj[e.b].push(k); });
+    const used = edges.map(() => false);
+    const stack = [{ node: BROOM, edge: -1 }];
+    const path = [];
+    while (stack.length) {
+      const top = stack[stack.length - 1];
+      const open = adj[top.node].filter((k) => !used[k]);
+      if (open.length) {
+        const k = open.find((x) => edges[x].kind === "sweep") ?? open[0];
+        used[k] = true;
+        const e = edges[k];
+        stack.push({ node: e.a === top.node ? e.b : e.a, edge: k });
+      } else {
+        path.push(stack.pop());
+      }
+    }
+    path.reverse();
+    const at = (i) => (i === BROOM ? broom : V[i]);
+    const moves = [];
+    for (let k = 1; k < path.length; k++) {
+      const e = edges[path[k].edge];
+      const m = { kind: e.kind, a: path[k - 1].node, b: path[k].node, seg: e.seg };
+      const prev = moves[moves.length - 1];
+      if (prev && prev.kind === "carry" && m.kind === "carry" &&
+          Math.abs(dist(at(prev.a), at(prev.b)) + dist(at(m.a), at(m.b)) - dist(at(prev.a), at(m.b))) < 1e-9) {
+        prev.b = m.b;
+      } else {
+        moves.push(m);
+      }
+    }
+    return moves;
+  }
+
+  // ---- Colours: one hue per theme, interpolated in OKLab from the first to the last run ----
+  function hexToOklab(hex) {
+    const lin = (c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);
+    const [r, g, b] = [1, 3, 5].map((i) => lin(parseInt(hex.slice(i, i + 2), 16) / 255));
+    const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+    const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+    const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    return [0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+            1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+            0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s];
+  }
+  function oklabToHex([L, a, b]) {
+    const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3;
+    const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3;
+    const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3;
+    const rgb = [4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+                 -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+                 -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s];
+    return "#" + rgb.map((c) => {
+      c = Math.min(Math.max(c, 0), 1);
+      const v = c <= 0.0031308 ? 12.92 * c : 1.055 * c ** (1 / 2.4) - 0.055;
+      return Math.round(v * 255).toString(16).padStart(2, "0");
+    }).join("");
+  }
+  function runColors(n) {
+    const css = getComputedStyle(document.documentElement);
+    const first = hexToOklab(css.getPropertyValue("--run-first").trim());
+    const last = hexToOklab(css.getPropertyValue("--run-last").trim());
+    if (n <= 1) return [oklabToHex(first)];
+    return Array.from({ length: n }, (_, k) => oklabToHex(first.map((f, i) => f + (last[i] - f) * k / (n - 1))));
+  }
+
+  // ---- Drawing ----
+  const X = (x) => x - XMIN;
+  const Y = (y) => YTOP - y;
+  const f = (v) => v.toFixed(3);
+  const towards = (p, q, step) => {
+    const d = dist(p, q);
+    return d === 0 ? p : { x: p.x + (q.x - p.x) * step / d, y: p.y + (q.y - p.y) * step / d };
+  };
+
+  function place(p, along, placed) {
+    const cands = [p];
+    for (const step of [1.0, 1.6]) if (step < dist(p, along) - 0.3) cands.push(towards(p, along, step));
+    for (const [dx, dy] of [[0, -1], [1, 0], [-1, 0], [0, 1], [0.8, -0.8], [-0.8, -0.8]]) cands.push({ x: p.x + dx, y: p.y + dy });
+    for (const c of cands) {
+      if (placed.every((q) => dist(c, q) >= 2 * R + 0.05)) { placed.push(c); return c; }
+    }
+    placed.push(p);
+    return p;
+  }
+
+  function splitRuns(moves) {
+    const runs = [];
+    let prev = "carry";
+    for (const m of moves) {
+      if (m.kind === "sweep") {
+        if (prev === "carry") runs.push([]);
+        runs[runs.length - 1].push(m);
+      }
+      prev = m.kind;
+    }
+    return runs;
+  }
+
+  // open: the last run is still going on, so it has no end marker yet.
+  function routeSvg(moves, broom, open) {
+    const at = (i) => (i === BROOM ? broom : V[i]);
+    const runs = splitRuns(moves);
+    const colors = runColors(Math.max(runs.length, 6));
+    let out = "";
+    runs.forEach((run, k) => {
+      for (const m of run) {
+        const p = at(m.a), q = at(m.b);
+        out += `<line x1="${f(X(p.x))}" y1="${f(Y(p.y))}" x2="${f(X(q.x))}" y2="${f(Y(q.y))}" stroke="${colors[k]}" stroke-width="0.17"/>`;
+        const len = dist(p, q);
+        if (len > 0.5) {
+          const ux = (q.x - p.x) / len, uy = (q.y - p.y) / len;
+          const mx = (p.x + q.x) / 2, my = (p.y + q.y) / 2;
+          const tip = { x: mx + ux * 0.3, y: my + uy * 0.3 };
+          const b1 = { x: mx - ux * 0.25 - uy * 0.24, y: my - uy * 0.25 + ux * 0.24 };
+          const b2 = { x: mx - ux * 0.25 + uy * 0.24, y: my - uy * 0.25 - ux * 0.24 };
+          out += `<polygon points="${[tip, b1, b2].map((c) => `${f(X(c.x))},${f(Y(c.y))}`).join(" ")}" fill="${colors[k]}"/>`;
+        }
+      }
+    });
+
+    const placed = [];
+    const starts = runs.map((run) => place(at(run[0].a), at(run[0].b), placed));
+    const ends = runs.map((run, k) => (open && k === runs.length - 1)
+      ? null : place(at(run[run.length - 1].b), at(run[run.length - 1].a), placed));
+
+    // Carries from the end marker of one run to the start marker of the next.
+    let runIndex = 0;
+    let prev = { p: broom, gap: 0.3 };
+    moves.forEach((m, k) => {
+      if (m.kind === "sweep") {
+        if (k === 0 || moves[k - 1].kind === "carry") runIndex++;
+        prev = { p: ends[runIndex - 1], gap: 0.5 };
+        return;
+      }
+      const next = moves[k + 1];
+      const target = next && next.kind === "sweep" ? { p: starts[runIndex], gap: 0.5 }
+        : { p: at(m.b), gap: next ? 0 : (m.b === BROOM ? 0.3 : 0) };
+      const source = prev;
+      prev = { p: at(m.b), gap: 0 };
+      let tail, head, rad;
+      if (Math.abs(at(m.a).y - NET) < 1e-6 && Math.abs(at(m.b).y - NET) < 1e-6) {
+        tail = { x: source.p.x, y: source.p.y - source.gap };
+        head = { x: target.p.x, y: target.p.y - target.gap };
+        rad = head.x > tail.x ? 0.35 : -0.35;
+      } else if (dist(source.p, target.p) > source.gap + target.gap) {
+        tail = towards(source.p, target.p, source.gap);
+        head = towards(target.p, source.p, target.gap);
+        rad = 0.2;
+      } else {
+        return;
+      }
+      const dx = head.x - tail.x, dy = head.y - tail.y;
+      const c = { x: (tail.x + head.x) / 2 + rad * dy, y: (tail.y + head.y) / 2 - rad * dx };
+      out += `<path d="M${f(X(tail.x))} ${f(Y(tail.y))} Q${f(X(c.x))} ${f(Y(c.y))} ${f(X(head.x))} ${f(Y(head.y))}" fill="none" stroke="var(--carry)" stroke-width="0.09" stroke-dasharray="0.32 0.2" marker-end="url(#arrow)"/>`;
+    });
+
+    runs.forEach((_, k) => {
+      const s = starts[k], e = ends[k];
+      out += `<circle cx="${f(X(s.x))}" cy="${f(Y(s.y))}" r="${R}" fill="${colors[k]}" stroke="var(--marker-ground)" stroke-width="0.08"/>`;
+      out += `<text x="${f(X(s.x))}" y="${f(Y(s.y))}" fill="#ffffff" class="mk">${k + 1}</text>`;
+      if (!e) return;
+      out += `<circle cx="${f(X(e.x))}" cy="${f(Y(e.y))}" r="${R}" fill="var(--marker-ground)" stroke="${colors[k]}" stroke-width="0.11"/>`;
+      out += `<text x="${f(X(e.x))}" y="${f(Y(e.y))}" fill="${colors[k]}" class="mk">${k + 1}</text>`;
+    });
+    return out;
+  }
+
+  const svg = document.getElementById("court");
+  svg.setAttribute("viewBox", `0 0 ${f(VBW)} ${f(VBH)}`);
+
+  function render() {
+    const showOpt = state.view === "opt";
+    const moves = showOpt ? optimum.moves : state.moves;
+    const swept = showOpt ? new Set(SEG.map((_, k) => k)) : sweptSet();
+    const pos = position();
+    const done = finished();
+    let s = `<defs><marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="var(--carry)"/></marker>
+      <style>.mk{font:700 0.5px var(--font-body);text-anchor:middle;dominant-baseline:central}.lab{font:500 0.42px var(--font-body);fill:var(--muted)}</style></defs>`;
+    s += `<rect class="hit-bg" data-bg="1" x="${f(X(-SIDE))}" y="${f(Y(NET + 1))}" width="${f(W + 2 * SIDE)}" height="${f(NET + 1 + RUNBACK)}" fill="var(--clay)" stroke="var(--clay-edge)" stroke-width="0.06"/>`;
+
+    // Lines: dusty until swept.
+    SEG.forEach((e, k) => {
+      const p = V[e.u], q = V[e.v];
+      s += `<line x1="${f(X(p.x))}" y1="${f(Y(p.y))}" x2="${f(X(q.x))}" y2="${f(Y(q.y))}" stroke="${swept.has(k) ? "var(--line)" : "var(--dust)"}" stroke-width="0.26" stroke-linecap="square"/>`;
+    });
+    // Pieces still to sweep after a refused return; short ones get a ring so they stay visible.
+    if (!showOpt) {
+      for (const k of flash) {
+        const p = V[SEG[k].u], q = V[SEG[k].v];
+        s += SEG[k].len < 0.5
+          ? `<circle class="flash" cx="${f(X((p.x + q.x) / 2))}" cy="${f(Y((p.y + q.y) / 2))}" r="0.55" fill="none" stroke="var(--accent)" stroke-width="0.14"/>`
+          : `<line class="flash" x1="${f(X(p.x))}" y1="${f(Y(p.y))}" x2="${f(X(q.x))}" y2="${f(Y(q.y))}" stroke="var(--accent)" stroke-width="0.55" stroke-linecap="round" opacity="0.55"/>`;
+      }
+    }
+    // The centre mark is painted, and swept together with the middle baseline piece.
+    const markSwept = swept.has(SEG.findIndex((e) => e.line === "baseline" && V[e.u].x <= W / 2 && V[e.v].x >= W / 2));
+    s += `<line x1="${f(X(W / 2))}" y1="${f(Y(0))}" x2="${f(X(W / 2))}" y2="${f(Y(CENTRE_MARK_LENGTH + 0.12))}" stroke="${markSwept ? "var(--line)" : "var(--dust)"}" stroke-width="0.12"/>`;
+    // Hints: the line pieces you can sweep from where you stand (none while the broom is lifted).
+    if (!showOpt && pos !== BROOM && !done && !lifted) {
+      SEG.forEach((e, k) => {
+        if (swept.has(k) || (e.u !== pos && e.v !== pos)) return;
+        const p = V[e.u], q = V[e.v];
+        s += `<line x1="${f(X(p.x))}" y1="${f(Y(p.y))}" x2="${f(X(q.x))}" y2="${f(Y(q.y))}" stroke="var(--hint)" stroke-width="0.6" stroke-linecap="round"/>`;
+      });
+    }
+    // Net and posts.
+    s += `<line x1="${f(X(-POST))}" y1="${f(Y(NET))}" x2="${f(X(W + POST))}" y2="${f(Y(NET))}" stroke="var(--net)" stroke-width="0.1"/>`;
+    for (const x of [-POST, W + POST]) s += `<circle cx="${f(X(x))}" cy="${f(Y(NET))}" r="0.13" fill="var(--net)"/>`;
+    s += `<text class="lab" x="${f(X(W / 2))}" y="${f(Y(NET + 0.5))}" text-anchor="middle">net</text>`;
+    // Stop points.
+    V.forEach((p) => { s += `<circle cx="${f(X(p.x))}" cy="${f(Y(p.y))}" r="0.12" fill="var(--ink-2)"/>`; });
+
+    const last = moves[moves.length - 1];
+    s += routeSvg(moves, state.broom, !showOpt && !done && !lifted && last !== undefined && last.kind === "sweep");
+
+    // You and the broom place; a dashed ring means the broom is lifted.
+    if (!showOpt && !done) {
+      const p = pt(pos);
+      s += `<circle class="you-ring" cx="${f(X(p.x))}" cy="${f(Y(p.y))}" r="0.62" fill="none" stroke="var(--accent)" stroke-width="0.1"${lifted ? ` stroke-dasharray="0.25 0.18"` : ""}/>`;
+      if (lifted) s += `<text class="lab" x="${f(X(p.x) + 0.75)}" y="${f(Y(p.y) - 0.55)}" style="fill:var(--accent)">broom lifted</text>`;
+    }
+    const b = state.broom;
+    s += `<rect x="${f(X(b.x) - 0.3)}" y="${f(Y(b.y) - 0.3)}" width="0.6" height="0.6" fill="var(--ink)" stroke="var(--clay)" stroke-width="0.06"/>`;
+    s += `<text class="lab" x="${f(X(b.x) + 0.5)}" y="${f(Y(b.y))}" dominant-baseline="central">broom</text>`;
+
+    // Hit targets on top of everything.
+    if (!showOpt) {
+      SEG.forEach((e, k) => {
+        const p = V[e.u], q = V[e.v];
+        s += `<line class="hit-seg" data-seg="${k}" x1="${f(X(p.x))}" y1="${f(Y(p.y))}" x2="${f(X(q.x))}" y2="${f(Y(q.y))}" stroke-width="0.8"><title>${e.line}, ${e.len.toFixed(2)} m</title></line>`;
+      });
+      V.forEach((p, i) => {
+        s += `<circle class="hit-pt" data-pt="${i}" cx="${f(X(p.x))}" cy="${f(Y(p.y))}" r="0.62"><title>${p.label}</title></circle>`;
+      });
+      s += `<circle class="hit-pt" data-pt="${BROOM}" cx="${f(X(b.x))}" cy="${f(Y(b.y))}" r="0.7"><title>broom place</title></circle>`;
+    }
+    svg.innerHTML = s;
+    renderPanel();
+  }
+
+  // ---- Panel ----
+  const $ = (id) => document.getElementById(id);
+  const fmt = (v) => v.toFixed(2);
+
+  function totals(moves) {
+    let sweep = 0, carry = 0;
+    const at = (i) => pt(i);
+    for (const m of moves) {
+      const len = dist(at(m.a), at(m.b));
+      if (m.kind === "sweep") sweep += len; else carry += len;
+    }
+    return { sweep, carry, time: (sweep + carry) / SPEED };
+  }
+
+  function bestKey() { return `best:${placeKey(state.broom)}`; }
+  function readBest() { try { const v = localStorage.getItem(bestKey()); return v ? Number(v) : null; } catch { return null; } }
+  function writeBest(t) { try { localStorage.setItem(bestKey(), String(t)); } catch { /* storage unavailable */ } }
+
+  function renderPanel() {
+    const showOpt = state.view === "opt";
+    const t = showOpt ? { sweep: TOTAL, carry: optimum.carry, time: optimum.time } : totals(state.moves);
+    $("time-label").textContent = showOpt ? "Solver's time and distance" : "Your time and distance";
+    $("time").innerHTML = `${fmt(t.time)}<small>s</small>`;
+    $("dist").innerHTML = `${fmt(t.sweep + t.carry)}<small>m</small>`;
+    $("split").textContent = `sweeping ${fmt(t.sweep)} m in ${fmt(t.sweep / SPEED)} s`
+      + ` + carrying ${fmt(t.carry)} m in ${fmt(t.carry / SPEED)} s`;
+    const runs = splitRuns(showOpt ? optimum.moves : state.moves).length;
+    $("runs").textContent = runs;
+    const swept = sweptSet();
+    const leftLen = showOpt ? 0 : SEG.reduce((s, e, k) => s + (swept.has(k) ? 0 : e.len), 0);
+    $("left").textContent = `${fmt(leftLen)} m`;
+    $("opt").textContent = `${fmt(optimum.time)} s`;
+    $("opt-dist").textContent = `${fmt(TOTAL + optimum.carry)} m`;
+
+    const verdict = $("verdict");
+    verdict.className = "verdict";
+    const best = readBest();
+    const bestText = best !== null ? ` Your best from this broom place: ${fmt(best)} s.` : "";
+    if (finished()) {
+      const gap = t.time - optimum.time;
+      if (gap < 0.005) {
+        verdict.classList.add("win");
+        verdict.innerHTML = `<b>Optimal.</b> You matched the solver to the hundredth of a second.${bestText}`;
+      } else {
+        verdict.innerHTML = `<b>${fmt(gap)} s slower</b> than the solver (+${(100 * gap / optimum.time).toFixed(1)} %), ` +
+          `all of it in carrying: ${fmt(t.carry)} m against ${fmt(optimum.carry)} m.${bestText}`;
+      }
+    } else {
+      verdict.textContent = `At least ${ODD / 2} runs are needed: ${ODD} points have an odd number of line pieces.${bestText}`;
+    }
+
+    const started = state.moves.length > 0;
+    document.querySelectorAll("#presets button").forEach((btn) => {
+      btn.disabled = started;
+      btn.setAttribute("aria-pressed", String(Number(btn.dataset.x) === state.broom.x && Number(btn.dataset.y) === state.broom.y));
+    });
+    $("broom-hint").textContent = started
+      ? "Start over to move the broom."
+      : "Or click anywhere on the clay to put the broom there. The broom place is fixed once you start.";
+    $("undo").disabled = !started;
+    $("lift").disabled = showOpt || position() === BROOM || finished();
+    $("lift").setAttribute("aria-pressed", String(lifted));
+    $("lift").textContent = lifted ? "Put broom down" : "Lift broom";
+    $("view-you").setAttribute("aria-pressed", String(!showOpt));
+    $("view-opt").setAttribute("aria-pressed", String(showOpt));
+
+    const log = $("log");
+    if (!started) {
+      log.innerHTML = `<li><span class="empty">No moves yet. Click a point on the court to carry the broom there.</span></li>`;
+    } else {
+      let run = 0, prev = "carry", html = "";
+      state.moves.forEach((m, k) => {
+        if (m.kind === "sweep" && prev === "carry") run++;
+        const len = dist(pt(m.a), pt(m.b));
+        const text = m.kind === "sweep"
+          ? `Run ${run}: sweep ${SEG[m.seg].line}`
+          : `Carry to ${m.b === BROOM ? "the broom place" : V[m.b].label}`;
+        html += `<li class="${m.kind}"><span class="n">${k + 1}</span><span>${text}</span><span class="len">${fmt(len)} m</span></li>`;
+        prev = m.kind;
+      });
+      log.innerHTML = html;
+      log.scrollTop = log.scrollHeight;
+    }
+    renderBoard();
+  }
+
+  // ---- Shared board: scores/<player id> holds each player's best route per broom place ----
+  const placeKey = (b) => `${b.x.toFixed(3)},${b.y.toFixed(3)}`;
+  const PRESETS = Object.fromEntries([...document.querySelectorAll("#presets button")].map((btn) =>
+    [placeKey({ x: Number(btn.dataset.x), y: Number(btn.dataset.y) }), btn.textContent]));
+  let db = null, people = null, myId = null;
+  let board = new Map();
+  let boardState = "loading"; // "loading" | "on" | "off"
+  let saving = false, boardToken = 0;
+
+  const compact = (moves) => moves.map((m) => [m.kind === "sweep" ? 1 : 0, m.a, m.b]);
+
+  // Time of a stored route, recomputed from the rules; null when the route breaks one.
+  // A valid route can never beat the optimum, so this also keeps forged times off the board.
+  function checkedTime(route, broom) {
+    if (!Array.isArray(route) || !route.length || typeof broom.x !== "number" || typeof broom.y !== "number") return null;
+    const at = (i) => (i === BROOM ? broom : V[i]);
+    const swept = new Set();
+    let pos = BROOM, total = 0;
+    for (const step of route) {
+      if (!Array.isArray(step) || step.length !== 3) return null;
+      const [kind, a, b] = step;
+      if (a !== pos || !Number.isInteger(b) || b < 0 || b > BROOM || a === b) return null;
+      if (kind === 1) {
+        const s = SEG.findIndex((e) => (e.u === a && e.v === b) || (e.v === a && e.u === b));
+        if (s < 0 || swept.has(s)) return null;
+        swept.add(s);
+      } else if (kind !== 0) {
+        return null;
+      }
+      total += dist(at(a), at(b));
+      pos = b;
+    }
+    return pos === BROOM && swept.size === SEG.length ? total / SPEED : null;
+  }
+
+  function entries() {
+    const out = [];
+    for (const [id, body] of board) {
+      const places = body && typeof body.places === "object" && body.places ? body.places : {};
+      for (const [key, e] of Object.entries(places)) {
+        if (!e || typeof e !== "object") continue;
+        const broom = { x: e.x, y: e.y };
+        const time = checkedTime(e.route, broom);
+        if (time === null || placeKey(broom) !== key) continue;
+        const runs = e.route.filter((s, k) => s[0] === 1 && (k === 0 || e.route[k - 1][0] === 0)).length;
+        out.push({ id, key, broom, time, runs, at: typeof e.at === "string" ? e.at : "" });
+      }
+    }
+    return out.sort((p, q) => p.time - q.time || p.at.localeCompare(q.at));
+  }
+
+  function hint(text) { $("scores-hint").textContent = text; }
+
+  async function renderBoard() {
+    const list = $("scores"), placesEl = $("places");
+    const token = ++boardToken;
+    if (boardState !== "on") {
+      const li = document.createElement("li");
+      li.className = "note";
+      li.textContent = boardState === "loading" ? "Loading the board…"
+        : "The shared board is not available here. Open the game on claude.ai, signed in, to see it.";
+      list.replaceChildren(li);
+      placesEl.replaceChildren();
+      return;
+    }
+    const all = entries();
+    const key = placeKey(state.broom);
+    const rows = all.filter((e) => e.key === key).slice(0, 10);
+    const ps = people && rows.length ? await people.profiles(rows.map((r) => r.id)) : {};
+    if (token !== boardToken) return;
+
+    const items = rows.map((r, k) => {
+      const li = document.createElement("li");
+      const p = ps[r.id] || {};
+      const me = r.id === myId;
+      if (me) li.className = "me";
+      const rank = document.createElement("span");
+      rank.className = "rank";
+      rank.textContent = String(k + 1);
+      const img = document.createElement("img");
+      img.alt = "";
+      if (p.avatarUrl) img.src = p.avatarUrl;
+      const who = document.createElement("span");
+      who.className = "who";
+      who.textContent = p.name || "Someone";
+      if (me) { const s = document.createElement("small"); s.textContent = "you"; who.append(s); }
+      const t = document.createElement("span");
+      t.className = "t";
+      t.textContent = `${fmt(r.time)} s · ${fmt(r.time * SPEED)} m`;
+      const gap = document.createElement("small");
+      const over = r.time - optimum.time;
+      gap.textContent = over < 0.005 ? `optimal · ${r.runs} runs` : `+${fmt(over)} s · ${r.runs} runs`;
+      t.append(gap);
+      li.append(rank, img, who, t);
+      return li;
+    });
+    if (!items.length) {
+      const li = document.createElement("li");
+      li.className = "note";
+      li.textContent = "No times from this broom place yet. Finish a round to set the first one.";
+      items.push(li);
+    }
+    list.replaceChildren(...items);
+
+    // Other broom places that already have times.
+    const counts = new Map();
+    for (const e of all) if (e.key !== key) counts.set(e.key, { broom: e.broom, n: (counts.get(e.key)?.n || 0) + 1 });
+    const buttons = [...counts.entries()].sort((p, q) => q[1].n - p[1].n).slice(0, 8).map(([k, { broom, n }]) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.textContent = `${PRESETS[k] || `(${fmt(broom.x)}, ${fmt(broom.y)})`} · ${n}`;
+      btn.title = "Show the times from this broom place and play from it";
+      btn.disabled = state.moves.length > 0;
+      btn.addEventListener("click", () => placeBroom(broom.x, broom.y, false));
+      return btn;
+    });
+    if (buttons.length) {
+      const label = document.createElement("span");
+      label.className = "hint";
+      label.textContent = "Other broom places on the board:";
+      placesEl.replaceChildren(label, ...buttons);
+    } else {
+      placesEl.replaceChildren();
+    }
+  }
+
+  async function saveScore() {
+    if (!db || !myId || saving) return;
+    const key = placeKey(state.broom);
+    const time = totals(state.moves).time;
+    const mine = board.get(myId) || {};
+    const places = mine.places && typeof mine.places === "object" ? mine.places : {};
+    const previous = places[key];
+    const previousTime = previous ? checkedTime(previous.route, { x: previous.x, y: previous.y }) : null;
+    if (previousTime !== null && previousTime <= time + 1e-9) {
+      hint(`Your best from this broom place stays on the board: ${fmt(previousTime)} s.`);
+      return;
+    }
+    saving = true;
+    try {
+      await db.doc(`scores/${myId}`).set({
+        places: { ...places, [key]: { x: state.broom.x, y: state.broom.y, route: compact(state.moves), at: new Date().toISOString() } },
+      });
+      hint(`Your time ${fmt(time)} s is on the board.`);
+    } catch (e) {
+      hint(e && e.code === "invalid_argument"
+        ? "You can see the board but not add to it. Ask the owner of the game for Contributor access."
+        : "Your time could not be saved just now. Finish another round to try again.");
+    } finally {
+      saving = false;
+    }
+  }
+
+  async function initBoard() {
+    if (!window.claude || typeof window.claude.use !== "function") {
+      boardState = "off";
+      renderBoard();
+      return;
+    }
+    const [u, d] = await Promise.all([window.claude.use("user"), window.claude.use("db")]);
+    people = u;
+    db = d;
+    myId = u ? await u.id() : null;
+    if (!db) {
+      boardState = "off";
+      renderBoard();
+      return;
+    }
+    if (!myId) hint("Sign in to claude.ai to put your own time on the board.");
+    db.collection("scores").onSnapshot((snap) => {
+      board = new Map(snap.docs.map((doc) => [doc.id, doc.data() || {}]));
+      boardState = "on";
+      renderBoard();
+    }, () => {
+      boardState = "off";
+      renderBoard();
+    });
+  }
+
+  // ---- Moves ----
+  const status = $("status");
+  function say(html) { status.innerHTML = html; }
+
+  function commit(move) {
+    state.moves.push(move);
+    lifted = false;
+    flash = [];
+    if (finished()) {
+      const t = totals(state.moves).time;
+      const best = readBest();
+      if (best === null || t < best - 1e-9) writeBest(t);
+      saveScore();
+      say(t - optimum.time < 0.005
+        ? "<strong>All lines are clean and the broom is back.</strong> That is the optimum."
+        : "<strong>All lines are clean and the broom is back.</strong> Compare with the solver's route.");
+    } else if (move.kind === "sweep") {
+      say(`Swept the ${SEG[move.seg].line}, ${fmt(SEG[move.seg].len)} m. Keep sweeping from here, or <strong>lift the broom</strong> to stop: click your own point or press L.`);
+    } else if (move.b === BROOM) {
+      say("The broom is back at its place.");
+    } else {
+      say(`Carried the broom to the ${V[move.b].label}. Click a highlighted line piece to sweep it.`);
+    }
+    render();
+  }
+
+  // Lift the broom where you stand (or put it down again): the run ends here, and the
+  // next click on a point carries the broom, even to a neighbouring point.
+  function toggleLift() {
+    if (state.view === "opt" || finished()) return;
+    if (position() === BROOM) { say("The broom is still lifted. Click a point to carry it there."); return; }
+    lifted = !lifted;
+    say(lifted
+      ? "<strong>Broom lifted.</strong> Click any point to carry it there, or click a line piece that starts here to sweep it after all."
+      : "Broom down again. Click a highlighted line piece to sweep it.");
+    render();
+  }
+
+  function clickPoint(i) {
+    if (state.view === "opt") return;
+    if (finished()) { say("This round is over. <strong>Start over</strong> to play again."); return; }
+    const pos = position();
+    if (i === pos) { toggleLift(); return; }
+    if (i === BROOM) {
+      if (!allSwept()) {
+        const swept = sweptSet();
+        flash = SEG.map((_, k) => k).filter((k) => !swept.has(k));
+        const names = flash.map((k) => `${SEG[k].line} (${fmt(SEG[k].len)} m)`);
+        say(`<strong>Still to sweep:</strong> ${names.join(", ")}. They are highlighted on the court.`);
+        render();
+        return;
+      }
+      commit({ kind: "carry", a: pos, b: BROOM });
+      return;
+    }
+    const swept = sweptSet();
+    const k = SEG.findIndex((e, k2) => !swept.has(k2) && ((e.u === pos && e.v === i) || (e.v === pos && e.u === i)));
+    if (k >= 0 && !lifted && pos !== BROOM) {
+      commit({ kind: "sweep", a: pos, b: i, seg: k });
+    } else {
+      commit({ kind: "carry", a: pos, b: i });
+    }
+  }
+
+  function clickSegment(k) {
+    if (state.view === "opt") return;
+    if (finished()) { say("This round is over. <strong>Start over</strong> to play again."); return; }
+    const e = SEG[k];
+    const pos = position();
+    if (sweptSet().has(k)) { say(`This piece of the ${e.line} is already swept. Every piece is swept once.`); return; }
+    if (pos === BROOM) { say("First carry the broom to a corner, a junction or a line end: click a point."); return; }
+    if (e.u !== pos && e.v !== pos) {
+      say(`This piece of the ${e.line} does not start where you stand. Click one of its end points to carry the broom there.`);
+      return;
+    }
+    commit({ kind: "sweep", a: pos, b: e.u === pos ? e.v : e.u, seg: k });
+  }
+
+  // round: a click on the clay is rounded to centimetres; presets and board places are exact.
+  function placeBroom(x, y, round = true) {
+    const clamp = (v, lo, hi) => Math.min(Math.max(v, lo), hi);
+    const r = (v) => (round ? Math.round(v * 100) / 100 : v);
+    state.broom = { x: r(clamp(x, -SIDE, W + SIDE)), y: r(clamp(y, -RUNBACK, NET + 1)) };
+    optimum = solveOptimum(state.broom);
+    say(`Broom placed at (${state.broom.x}, ${state.broom.y}). Click a point to carry it there and start.`);
+    render();
+  }
+
+  svg.addEventListener("click", (ev) => {
+    const el = ev.target.closest("[data-seg],[data-pt],[data-bg]");
+    if (!el) return;
+    if (el.dataset.pt !== undefined) clickPoint(Number(el.dataset.pt));
+    else if (el.dataset.seg !== undefined) clickSegment(Number(el.dataset.seg));
+    else if (el.dataset.bg && state.moves.length === 0 && state.view === "you") {
+      const p = svg.createSVGPoint();
+      p.x = ev.clientX; p.y = ev.clientY;
+      const w = p.matrixTransform(svg.getScreenCTM().inverse());
+      placeBroom(w.x + XMIN, YTOP - w.y);
+    }
+  });
+
+  document.querySelectorAll("#presets button").forEach((btn) =>
+    btn.addEventListener("click", () => placeBroom(Number(btn.dataset.x), Number(btn.dataset.y), false)));
+  $("lift").addEventListener("click", toggleLift);
+  $("undo").addEventListener("click", () => {
+    if (lifted) {  // undo the lift first
+      lifted = false;
+      say("Broom down again.");
+      render();
+      return;
+    }
+    state.moves.pop();
+    flash = [];
+    say(state.moves.length ? "Took back the last move." : "Back at the start.");
+    render();
+  });
+  $("reset").addEventListener("click", () => {
+    state.moves = [];
+    flash = [];
+    lifted = false;
+    state.view = "you";
+    say("New round. Click a point on the court to carry the broom there.");
+    render();
+  });
+  $("view-you").addEventListener("click", () => { state.view = "you"; render(); });
+  $("view-opt").addEventListener("click", () => {
+    state.view = "opt";
+    say(`The solver's route from this broom place: ${splitRuns(optimum.moves).length} runs, ${fmt(optimum.carry)} m of carrying.`);
+    render();
+  });
+  document.addEventListener("keydown", (ev) => {
+    if ((ev.key === "z" && (ev.ctrlKey || ev.metaKey)) || ev.key === "Backspace") {
+      if (state.moves.length && document.activeElement?.tagName !== "INPUT") { ev.preventDefault(); $("undo").click(); }
+    } else if ((ev.key === "l" || ev.key === "L") && !ev.ctrlKey && !ev.metaKey && !ev.altKey) {
+      toggleLift();
+    }
+  });
+
+  // Re-colour when the theme changes.
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change", render);
+  new MutationObserver(render).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  function start(data) {
+    if (data && data.broom && Array.isArray(data.moves)) state = { broom: data.broom, moves: data.moves, view: data.view || "you" };
+    optimum = solveOptimum(state.broom);
+    say("Click a point on the court to carry the broom there, then sweep the line pieces that start where you stand.");
+    render();
+  }
+  window.claude?.hot?.snapshot?.(() => ({ broom: state.broom, moves: state.moves, view: state.view }));
+  window.claude?.hot?.ready ? window.claude.hot.ready(start) : start(window.claude?.hot?.data ?? {});
+  initBoard();
+})();
+</script>
