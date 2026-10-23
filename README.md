@@ -18,6 +18,8 @@ The problem is solved with a mixed-integer model that combines
 
 - Problem statement: [docs/problem-statement.md](docs/problem-statement.md)
 - Mathematical model: [docs/mip-model.md](docs/mip-model.md)
+- **Play it yourself:** [Line Sweeping Challenge](https://tbulubas.github.io/tennis-line-sweeping/web/sweeping-game.html),
+  a browser game that compares your route with the optimum
 
 ## Author
 
@@ -33,8 +35,10 @@ the code and the documentation, following my specifications and decisions.
 
 **License.** © 2026 Taras Bulubas. All rights reserved. This repository is
 published for viewing only; any use requires my prior written permission —
-see [License](#license). The one exception is the notebook, which you may run
-and modify in Google Colab for personal, non-commercial exploration.
+see [License](#license). There are two exceptions: the notebook, which you may
+run and modify in Google Colab for personal, non-commercial exploration, and
+the game, which you may play on its GitHub Pages address for personal,
+non-commercial use.
 
 ## Development environment
 
@@ -134,6 +138,32 @@ make notebook
 opens it in JupyterLab in the browser. The notebook is stored with the
 outputs of the default instance, so it can also be read without running it.
 
+## Game
+
+**Play online:** [Line Sweeping Challenge](https://tbulubas.github.io/tennis-line-sweeping/web/sweeping-game.html)
+— nothing to install, it runs in any browser, phones included.
+
+The game ([web/sweeping-game.html](web/sweeping-game.html)) lets you plan the
+route by hand and compare it with the solver:
+
+- Choose where the broom is kept (a preset or a click on the clay).
+- Click a point to carry the broom there, click a line piece that starts
+  where you stand to sweep it. Lift the broom at a corner or junction with
+  *Lift broom*, a click on your own point or the key L.
+- Every line piece is swept once; then the broom goes back to its place.
+- The scoreboard shows your time and distance, sweeping and carrying apart,
+  the number of runs and the solver's optimum. *Solver's route* draws the
+  optimal route.
+
+The optimum is computed in the page itself, with the exact matching that the
+tests use to check the MILP (see *Independent check of optimality* in
+[docs/mip-model.md](docs/mip-model.md)), so it agrees with the solver to the
+hundredth of a second. The route can only tie the optimum, never beat it.
+
+No solver is needed to play. The page is a single HTML file without a build
+step, served by GitHub Pages straight from this repository; see
+[docs/github-pages.md](docs/github-pages.md) for how it is published.
+
 ## Usage
 
 ```bash
@@ -201,7 +231,7 @@ computed independently (a minimum matching of the vertices of odd degree).
 ## Layout
 
 ```
-docs/                 problem statement, mathematical model, IntelliJ setup
+docs/                 problem statement, mathematical model, IntelliJ setup, GitHub Pages
 src/line_sweeping/
   court.py            ITF court dimensions, lines of one half, line graph
   instance.py         input parameters
@@ -212,6 +242,7 @@ src/line_sweeping/
 scripts/              linkedin_image.py renders the image, check_venv.py guards the Python version
 tests/                examples from docs/mip-model.md, independent optimum, edge cases
 notebooks/            interactive notebook
+web/                  sweeping-game.html, the browser game
 .run/                 shared IntelliJ run configurations
 Makefile              environment and task shortcuts
 LICENSE               all rights reserved
@@ -225,10 +256,18 @@ This repository — code, models, documentation, notebooks and images — is
 published for viewing only. Using, running, copying, modifying or
 distributing any part of it requires my prior written permission.
 
-**Exception:** you may open, run and modify the notebook
-`notebooks/line_sweeping.ipynb` in Google Colab for personal, non-commercial
-exploration. Your modified copy is for yourself only; it may not be published
-or redistributed, and the code and models may not be reused elsewhere.
+**Exceptions:**
+
+- **Notebook:** you may open, run and modify the notebook
+  `notebooks/line_sweeping.ipynb` in Google Colab for personal, non-commercial
+  exploration. Your modified copy is for yourself only; it may not be
+  published or redistributed.
+- **Game:** you may play the game `web/sweeping-game.html` at its GitHub Pages
+  address, https://tbulubas.github.io/tennis-line-sweeping/web/sweeping-game.html,
+  for personal, non-commercial use. Copying, saving, modifying or hosting the
+  page elsewhere is not allowed.
+
+The code, the models, the notebook and the game may not be reused elsewhere.
 
 See [LICENSE](LICENSE) for the full terms. To ask for permission, write to
 taras.bulubas@gmail.com.

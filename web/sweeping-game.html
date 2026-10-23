@@ -1,9 +1,21 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Line Sweeping Challenge</title>
-<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="description" content="Sweep the lines of a clay tennis court by hand and compare your route with the optimum of a MILP model.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
 <style>
+/* Base: light by default, room for the phone's safe areas, the hidden attribute always wins. */
+:root { color-scheme: light; padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); }
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; }
+img { max-width: 100%; }
+[hidden] { display: none !important; }
+
 /* Layout: the court is the playing field on the left, a scoreboard and controls beside it; stacked on phones. */
 :root {
   --bg: #faf7f4;
@@ -231,6 +243,17 @@ button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-c
 .rules h2 { font-family: var(--font-display); font-size: 1.3rem; text-transform: uppercase; color: var(--ink); margin: 0; letter-spacing: 0.02em; }
 .rules ol { margin: 0; padding-left: 1.3em; display: grid; gap: 3px; }
 .rules p { margin: 0; }
+.foot {
+  max-width: 70ch;
+  border-top: 1px solid var(--rule);
+  padding-top: 12px;
+  color: var(--muted);
+  font-size: 0.82rem;
+  display: grid;
+  gap: 4px;
+}
+.foot p { margin: 0; }
+.foot a { color: var(--ink-2); }
 
 .hit-seg { stroke: transparent; fill: none; cursor: pointer; }
 .hit-seg:hover { stroke: var(--hover); }
@@ -247,7 +270,8 @@ button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-c
   @keyframes pulse { 50% { opacity: 0.45; } }
 }
 </style>
-
+</head>
+<body>
 <div class="page">
   <header>
     <h1>Line Sweeping Challenge</h1>
@@ -318,11 +342,9 @@ button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-c
         </div>
       </div>
 
-      <div class="group">
+      <div class="group" id="board-group" hidden>
         <h2 id="scores-title">Best times from this broom place</h2>
-        <ol class="scores" id="scores" aria-labelledby="scores-title">
-          <li class="note">Loading the board…</li>
-        </ol>
+        <ol class="scores" id="scores" aria-labelledby="scores-title"></ol>
         <p class="hint" id="scores-hint">Finish a round and your time goes on the board under your claude.ai name.
           Only your best time per broom place is kept.</p>
         <div class="places" id="places"></div>
@@ -351,6 +373,14 @@ button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-c
       centre mark is swept in passing with the baseline, as on a real court. The lines total 73.14 m. The
       solver's route is provably optimal, so the best you can do is a tie.</p>
   </section>
+
+  <footer class="foot">
+    <p>© 2026 Taras Bulubas. All rights reserved. You may play this game here for personal,
+      non-commercial use; copying, saving, modifying or hosting the page is not allowed. See the
+      <a href="https://github.com/tbulubas/tennis-line-sweeping/blob/main/LICENSE">license</a>.</p>
+    <p>The MILP model behind the solver's route:
+      <a href="https://github.com/tbulubas/tennis-line-sweeping">github.com/tbulubas/tennis-line-sweeping</a>.</p>
+  </footer>
 </div>
 
 <script>
@@ -831,15 +861,9 @@ button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-c
   async function renderBoard() {
     const list = $("scores"), placesEl = $("places");
     const token = ++boardToken;
-    if (boardState !== "on") {
-      const li = document.createElement("li");
-      li.className = "note";
-      li.textContent = boardState === "loading" ? "Loading the board…"
-        : "The shared board is not available here. Open the game on claude.ai, signed in, to see it.";
-      list.replaceChildren(li);
-      placesEl.replaceChildren();
-      return;
-    }
+    // The board needs a viewer that stores shared data; elsewhere (GitHub Pages, a local file) it stays hidden.
+    $("board-group").hidden = boardState !== "on";
+    if (boardState !== "on") return;
     const all = entries();
     const key = placeKey(state.broom);
     const rows = all.filter((e) => e.key === key).slice(0, 10);
@@ -1107,3 +1131,5 @@ button[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-c
   initBoard();
 })();
 </script>
+</body>
+</html>

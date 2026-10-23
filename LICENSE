@@ -21,13 +21,20 @@ prior written permission of the copyright holder you may not:
 Viewing the Work on GitHub, and forking it on GitHub to the extent required
 by the GitHub Terms of Service, does not grant any of the rights above.
 
-Exception - online notebook: you may open, run and modify the notebook
+Exception 1 - online notebook: you may open, run and modify the notebook
 notebooks/line_sweeping.ipynb in Google Colab, including the automatic
 installation of the line_sweeping package it performs there, for personal,
 non-commercial exploration. Your modified copy may only be kept for yourself.
-No other rights are granted; in particular you may not reuse the code, the
-models or the notebook elsewhere, or publish or redistribute them or any
-modified version.
+
+Exception 2 - online game: you may open and play the game
+web/sweeping-game.html in a web browser at its GitHub Pages address,
+https://tbulubas.github.io/tennis-line-sweeping/web/sweeping-game.html,
+for personal, non-commercial use. This covers playing it only at that
+address; it does not cover copying, saving, modifying or hosting the page.
+
+No rights are granted beyond these two exceptions; in particular you may not
+reuse the code, the models, the notebook or the game elsewhere, or publish or
+redistribute them or any modified version.
 
 To request permission, contact the copyright holder at
 taras.bulubas@gmail.com. Permission is only valid if given in writing.
